@@ -1,0 +1,154 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ==================================================
+# 1. PARAMETROS INICIALES
+# ==================================================
+
+U0 = 1000       # Usuarios iniciales
+gamma = 0.05    # Tasa de abandono
+dias = 60       # Tiempo de simulacion
+
+# Para que los resultados sean reproducibles
+np.random.seed(42)
+
+tiempo = np.arange(0, dias + 1)
+
+
+# ==================================================
+# 2. MODELO MATEMATICO DE RETENCION
+# ==================================================
+
+# U(t) = U0 * e^(-gamma * t)
+
+modelo = U0 * np.exp(-gamma * tiempo)
+
+
+# ==================================================
+# 3. SIMULACION DE RETENCION DE USUARIOS
+# ==================================================
+
+usuarios_simulados = [U0]
+
+for dia in range(1, dias + 1):
+
+    usuarios_actuales = usuarios_simulados[-1]
+
+    # Probabilidad variable de abandono
+    probabilidad = (
+        0.04
+        + 0.08 * np.exp(-(dia - 1) / 5)
+        + np.random.normal(0, 0.015)
+    )
+
+    # Limitar la probabilidad a valores razonables
+    probabilidad = np.clip(probabilidad, 0.01, 0.30)
+
+    # Simular la cantidad de usuarios que abandonan
+    abandonos = np.random.binomial(
+        usuarios_actuales, probabilidad
+    )
+
+    # Actualizar usuarios que permanecen activos
+    nuevos_usuarios_activos = usuarios_actuales - abandonos
+
+    usuarios_simulados.append(nuevos_usuarios_activos)
+
+
+# ==================================================
+# 4. TABLA DE RESULTADOS
+# ==================================================
+
+print("COMPARACION DE RETENCION DE USUARIOS")
+print("-----------------------------------------------")
+print("DIA | MODELO TEORICO | DATOS SIMULADOS")
+print("-----------------------------------------------")
+
+for dia in range(dias + 1):
+    print(
+        f"{dia:3} | "
+        f"{modelo[dia]:14.2f} | "
+        f"{usuarios_simulados[dia]:15}"
+    )
+
+
+# ==================================================
+# 5. TASA INSTANTANEA DE ABANDONO
+# ==================================================
+
+# Derivada: U'(t) = -gamma * U0 * e^(-gamma*t)
+
+tasa_abandono = -gamma * modelo
+
+print("\nTASA INSTANTANEA DE ABANDONO")
+print("-----------------------------------------------")
+
+for dia in [0, 1, 5, 10, 30, 60]:
+    print(
+        f"Dia {dia}: "
+        f"{tasa_abandono[dia]:.2f} usuarios/dia"
+    )
+
+
+# ==================================================
+# 6. VIDA MEDIA DE RETENCION
+# ==================================================
+
+# Tiempo necesario para que permanezca el 50%
+# de los usuarios iniciales.
+
+vida_media = np.log(2) / gamma
+
+print("\nVIDA MEDIA DE RETENCION")
+print("-----------------------------------------------")
+print(f"Vida media: {vida_media:.2f} dias")
+
+
+# ==================================================
+# 7. COMPARACION NUMERICA DEL MODELO
+# ==================================================
+
+errores = np.array(usuarios_simulados) - modelo
+
+# Error absoluto medio
+mae = np.mean(np.abs(errores))
+
+# Raiz del error cuadratico medio
+rmse = np.sqrt(np.mean(errores ** 2))
+
+print("\nCOMPARACION NUMERICA")
+print("-----------------------------------------------")
+print(f"Error absoluto medio (MAE): {mae:.2f}")
+print(f"Raiz del error cuadratico medio (RMSE): {rmse:.2f}")
+
+
+# ==================================================
+# 8. GRAFICA COMPARATIVA
+# ==================================================
+
+plt.figure(figsize=(11, 6))
+
+plt.plot(
+    tiempo,
+    modelo,
+    label="Modelo matematico",
+    linewidth=2
+)
+
+plt.plot(
+    tiempo,
+    usuarios_simulados,
+    label="Retencion simulada",
+    marker="o",
+    markersize=3,
+    linewidth=1
+)
+
+plt.title("Comparacion de retencion de usuarios")
+plt.xlabel("Dias despues del lanzamiento")
+plt.ylabel("Usuarios activos")
+
+plt.legend()
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
